@@ -1,6 +1,17 @@
-# Kancli
+# Tasker
 
-Welcome to our demo repo for a kanban board for the command line.
+A powerful command-line task management application that helps you organize and track your work efficiently.
+
+## Features
+
+- **Interactive Kanban Board**: Visualize your tasks in a clean, intuitive interface with customizable columns
+- **Task Management**: Create, edit, and delete tasks with ease
+- **Status Tracking**: Move tasks between different status columns (To Do, In Progress, Done)
+- **Keyboard Navigation**: Full keyboard support for quick task management
+- **Customizable**: Configure columns and workflows to match your needs
+- **Lightweight**: Fast and efficient, running entirely in your terminal
+
+## Getting Started
 
 There is a video to go along with this repo on our [YouTube
 channel](https://youtube.com/c/charmcli) if you would like a full walk through
