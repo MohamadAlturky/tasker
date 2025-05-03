@@ -93,12 +93,33 @@ func (f Form) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (f Form) View() string {
-	return lipgloss.JoinVertical(
+	formStyle := lipgloss.NewStyle().
+		Padding(1, 2).
+		Border(lipgloss.RoundedBorder()).
+		BorderForeground(lipgloss.Color("62")).
+		Width(50)
+
+	titleStyle := lipgloss.NewStyle().
+		Foreground(lipgloss.Color("62")).
+		Bold(true).
+		MarginBottom(1)
+
+	labelStyle := lipgloss.NewStyle().
+		Foreground(lipgloss.Color("240")).
+		MarginTop(1).
+		MarginBottom(1)
+
+	content := lipgloss.JoinVertical(
 		lipgloss.Left,
-		"Create a new task",
+		titleStyle.Render("Create a new task"),
+		labelStyle.Render("Task Title"),
 		f.title.View(),
-		"Due Date (YYYY-MM-DD)",
+		labelStyle.Render("Due Date (YYYY-MM-DD)"),
 		f.dueDate.View(),
+		labelStyle.Render("Description"),
 		f.description.View(),
-		f.help.View(keys))
+		f.help.View(keys),
+	)
+
+	return formStyle.Render(content)
 }
