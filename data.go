@@ -1,8 +1,6 @@
 package main
 
-import "github.com/charmbracelet/bubbles/list"
-
-// Provides the mock data to fill the kanban board
+// Provides the data to fill the kanban board from the database
 
 func (b *Board) initLists() {
 	b.cols = []column{
@@ -10,21 +8,21 @@ func (b *Board) initLists() {
 		newColumn(inProgress),
 		newColumn(done),
 	}
-	// Init To Do
+
+	// Set column titles
 	b.cols[todo].list.Title = "To Do"
-	b.cols[todo].list.SetItems([]list.Item{
-		Task{status: todo, title: "buy milk", description: "strawberry milk"},
-		Task{status: todo, title: "eat sushi", description: "negitoro roll, miso soup, rice"},
-		Task{status: todo, title: "fold laundry", description: "or wear wrinkly t-shirts"},
-	})
-	// Init in progress
 	b.cols[inProgress].list.Title = "In Progress"
-	b.cols[inProgress].list.SetItems([]list.Item{
-		Task{status: inProgress, title: "write code", description: "don't worry, it's Go"},
-	})
-	// Init done
 	b.cols[done].list.Title = "Done"
-	b.cols[done].list.SetItems([]list.Item{
-		Task{status: done, title: "stay cool", description: "as a cucumber"},
-	})
+
+	// Load tasks from database
+	tasks, err := database.GetAllTasks()
+	if err != nil {
+		// Handle error appropriately
+		return
+	}
+
+	// Add tasks to appropriate columns
+	for _, task := range tasks {
+		b.cols[task.status].list.SetItems(append(b.cols[task.status].list.Items(), task))
+	}
 }

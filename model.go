@@ -40,8 +40,19 @@ func (m *Board) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.loaded = true
 		return m, tea.Batch(cmds...)
 	case Form:
-		return m, m.cols[m.focused].Set(msg.index, msg.CreateTask())
+		task := msg.CreateTask()
+		err := database.CreateTask(task)
+		if err != nil {
+			// Handle error appropriately
+			return m, nil
+		}
+		return m, m.cols[m.focused].Set(msg.index, task)
 	case moveMsg:
+		err := database.UpdateTask(msg.Task)
+		if err != nil {
+			// Handle error appropriately
+			return m, nil
+		}
 		return m, m.cols[m.focused.getNext()].Set(APPEND, msg.Task)
 	case tea.KeyMsg:
 		switch {
@@ -67,7 +78,6 @@ func (m *Board) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return m, cmd
 }
 
-// Changing to pointer receiver to get back to this model after adding a new task via the form... Otherwise I would need to pass this model along to the form and it becomes highly coupled to the other models.
 func (m *Board) View() string {
 	if m.quitting {
 		return ""

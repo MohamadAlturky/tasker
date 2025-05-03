@@ -1,13 +1,22 @@
 package main
 
+import "time"
+
 type Task struct {
+	id          int
 	status      status
 	title       string
 	description string
+	dueDate     time.Time
 }
 
-func NewTask(status status, title, description string) Task {
-	return Task{status: status, title: title, description: description}
+func NewTask(status status, title, description string, dueDate time.Time) Task {
+	return Task{
+		status:      status,
+		title:       title,
+		description: description,
+		dueDate:     dueDate,
+	}
 }
 
 func (t *Task) Next() {

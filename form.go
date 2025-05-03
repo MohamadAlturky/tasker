@@ -1,6 +1,8 @@
 package main
 
 import (
+	"time"
+
 	"github.com/charmbracelet/bubbles/help"
 	"github.com/charmbracelet/bubbles/key"
 	"github.com/charmbracelet/bubbles/textarea"
@@ -13,28 +15,38 @@ type Form struct {
 	help        help.Model
 	title       textinput.Model
 	description textarea.Model
+	dueDate     textinput.Model
 	col         column
 	index       int
 }
 
 func newDefaultForm() *Form {
-	return NewForm("task name", "")
+	return NewForm("task name", "", time.Now())
 }
 
-func NewForm(title, description string) *Form {
+func NewForm(title, description string, dueDate time.Time) *Form {
 	form := Form{
 		help:        help.New(),
 		title:       textinput.New(),
 		description: textarea.New(),
+		dueDate:     textinput.New(),
 	}
 	form.title.Placeholder = title
 	form.description.Placeholder = description
+	form.dueDate.Placeholder = "YYYY-MM-DD"
+	form.dueDate.SetValue(dueDate.Format("2006-01-02"))
 	form.title.Focus()
 	return &form
 }
 
 func (f Form) CreateTask() Task {
-	return Task{f.col.status, f.title.Value(), f.description.Value()}
+	dueDate, _ := time.Parse("2006-01-02", f.dueDate.Value())
+	return Task{
+		status:      f.col.status,
+		title:       f.title.Value(),
+		description: f.description.Value(),
+		dueDate:     dueDate,
+	}
 }
 
 func (f Form) Init() tea.Cmd {
@@ -51,12 +63,16 @@ func (f Form) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		switch {
 		case key.Matches(msg, keys.Quit):
 			return f, tea.Quit
-
 		case key.Matches(msg, keys.Back):
 			return board.Update(nil)
 		case key.Matches(msg, keys.Enter):
 			if f.title.Focused() {
 				f.title.Blur()
+				f.dueDate.Focus()
+				return f, textinput.Blink
+			}
+			if f.dueDate.Focused() {
+				f.dueDate.Blur()
 				f.description.Focus()
 				return f, textarea.Blink
 			}
@@ -68,6 +84,10 @@ func (f Form) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		f.title, cmd = f.title.Update(msg)
 		return f, cmd
 	}
+	if f.dueDate.Focused() {
+		f.dueDate, cmd = f.dueDate.Update(msg)
+		return f, cmd
+	}
 	f.description, cmd = f.description.Update(msg)
 	return f, cmd
 }
@@ -77,6 +97,8 @@ func (f Form) View() string {
 		lipgloss.Left,
 		"Create a new task",
 		f.title.View(),
+		"Due Date (YYYY-MM-DD)",
+		f.dueDate.View(),
 		f.description.View(),
 		f.help.View(keys))
 }

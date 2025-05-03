@@ -25,7 +25,10 @@ func (s status) getPrev() status {
 
 const margin = 4
 
-var board *Board
+var (
+	board    *Board
+	database *Database
+)
 
 const (
 	todo status = iota
@@ -40,6 +43,14 @@ func main() {
 		os.Exit(1)
 	}
 	defer f.Close()
+
+	// Initialize database
+	database, err = NewDatabase()
+	if err != nil {
+		fmt.Printf("Failed to initialize database: %v\n", err)
+		os.Exit(1)
+	}
+	defer database.Close()
 
 	board = NewBoard()
 	board.initLists()
