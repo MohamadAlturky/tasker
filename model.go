@@ -25,6 +25,23 @@ func (m *Board) Init() tea.Cmd {
 	return nil
 }
 
+// MoveTask moves a task from one status to another and updates the database
+func (m *Board) MoveTask(task Task, newStatus status) tea.Cmd {
+	// Update task status
+	task.status = newStatus
+
+	// Update in database
+	err := database.UpdateTask(task)
+	if err != nil {
+		return func() tea.Msg {
+			return tea.Printf("Error updating task: %v", err)
+		}
+	}
+
+	// Add to destination column using the Move constant
+	return m.cols[newStatus].Set(Move, task)
+}
+
 func (m *Board) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.WindowSizeMsg:
@@ -50,14 +67,9 @@ func (m *Board) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		// }
 		return m, m.cols[m.focused].Set(msg.index, task)
 	case moveMsg:
-		err := database.UpdateTask(msg.Task)
-		if err != nil {
-			// Log the error and show it to the user
-			return m, func() tea.Msg {
-				return tea.Printf("Error updating task: %v", err)
-			}
-		}
-		return m, m.cols[m.focused.getNext()].Set(APPEND, msg.Task)
+		// Task was already removed from source list in column.MoveToNext
+		// Just need to move it to the destination column
+		return m, m.MoveTask(msg.Task, msg.Task.status)
 	case tea.KeyMsg:
 		switch {
 		case key.Matches(msg, keys.Quit):

@@ -8,6 +8,7 @@ import (
 )
 
 const APPEND = -1
+const Move = -2
 
 type column struct {
 	focus  bool
@@ -107,6 +108,11 @@ func (c *column) DeleteCurrent() tea.Cmd {
 }
 
 func (c *column) Set(i int, t Task) tea.Cmd {
+	if i == Move {
+		// Just insert the task at the end of the list without database operations
+		// since it's being moved from another column and already in the database
+		return c.list.InsertItem(APPEND, t)
+	}
 	if i != APPEND {
 		// Update existing task in database
 		err := database.UpdateTask(t)
@@ -117,13 +123,34 @@ func (c *column) Set(i int, t Task) tea.Cmd {
 		}
 		return c.list.SetItem(i, t)
 	}
+
 	// Create new task in database
+	// The issue was that database.CreateTask doesn't update the original task
+	// because it receives a copy, not a pointer
+	// So we need to get the ID separately and set it on our task
 	err := database.CreateTask(t)
 	if err != nil {
 		return func() tea.Msg {
 			return tea.Printf("Error creating task: %v", err)
 		}
 	}
+
+	// Get the latest tasks to find our newly created task
+	tasks, err := database.GetAllTasks()
+	if err != nil {
+		return func() tea.Msg {
+			return tea.Printf("Error retrieving tasks: %v", err)
+		}
+	}
+
+	// Find the newly created task (assuming it's the last one with matching title)
+	for i := len(tasks) - 1; i >= 0; i-- {
+		if tasks[i].title == t.title && tasks[i].status == t.status {
+			t.SetID(tasks[i].GetID())
+			break
+		}
+	}
+
 	return c.list.InsertItem(APPEND, t)
 }
 
@@ -147,9 +174,8 @@ func (c *column) getStyle() lipgloss.Style {
 		Width(c.width)
 }
 
-type moveMsg struct {
-	Task
-}
+// moveMsg struct definition will be moved to messages.go
+// keep the MoveToNext function that uses it
 
 func (c *column) MoveToNext() tea.Cmd {
 	var task Task
@@ -158,13 +184,18 @@ func (c *column) MoveToNext() tea.Cmd {
 	if task, ok = c.list.SelectedItem().(Task); !ok {
 		return nil
 	}
-	// move item
-	c.list.RemoveItem(c.list.Index())
-	task.status = c.status.getNext()
 
-	// refresh list
+	// Update task status
+	nextStatus := c.status.getNext()
+	task.status = nextStatus
+
+	// Remove item from the current list
+	c.list.RemoveItem(c.list.Index())
+
+	// Refresh list
 	var cmd tea.Cmd
 	c.list, cmd = c.list.Update(nil)
 
+	// Return the moveMsg to add the task to its new column
 	return tea.Sequence(cmd, func() tea.Msg { return moveMsg{task} })
 }
