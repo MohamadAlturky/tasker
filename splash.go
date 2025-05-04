@@ -24,11 +24,8 @@ func (m splashModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.KeyMsg:
 		switch msg.String() {
 		default:
-			// case "q", "ctrl+c":
+			m.ready = true
 			return m, tea.Quit
-			// default:
-			// 	m.ready = true
-			return m, nil
 		}
 	}
 	return m, nil
