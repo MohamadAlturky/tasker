@@ -3,6 +3,8 @@ package main
 import (
 	"database/sql"
 	"fmt"
+	"os"
+	"path/filepath"
 
 	_ "modernc.org/sqlite"
 )
@@ -12,7 +14,21 @@ type Database struct {
 }
 
 func NewDatabase() (*Database, error) {
-	db, err := sql.Open("sqlite", "./tasks.db")
+	// Get the user's app data directory
+	appDataDir, err := os.UserConfigDir()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get user config directory: %v", err)
+	}
+
+	// Create app-specific directory
+	appDir := filepath.Join(appDataDir, "faster")
+	if err := os.MkdirAll(appDir, 0755); err != nil {
+		return nil, fmt.Errorf("failed to create app directory: %v", err)
+	}
+
+	// Use the app directory for the database file
+	dbPath := filepath.Join(appDir, "tasks.db")
+	db, err := sql.Open("sqlite", dbPath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to open database: %v", err)
 	}
