@@ -66,10 +66,10 @@ var keys = keyMap{
 		key.WithKeys("enter"),
 		key.WithHelp("enter", "move status forward"),
 	),
-	Help: key.NewBinding(
-		key.WithKeys("?"),
-		key.WithHelp("?", "toggle help"),
-	),
+	// Help: key.NewBinding(
+	// 	key.WithKeys("?"),
+	// 	key.WithHelp("?", "toggle help"),
+	// ),
 	Quit: key.NewBinding(
 		key.WithKeys("q", "ctrl+c"),
 		key.WithHelp("q/ctrl+c", "quit"),
