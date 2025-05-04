@@ -1,5 +1,7 @@
 package main
 
+import tea "github.com/charmbracelet/bubbletea"
+
 // Provides the data to fill the kanban board from the database
 
 func (b *Board) initLists() {
@@ -17,7 +19,8 @@ func (b *Board) initLists() {
 	// Load tasks from database
 	tasks, err := database.GetAllTasks()
 	if err != nil {
-		// Handle error appropriately
+		// Log the error and show it to the user
+		tea.Printf("Error loading tasks: %v", err)
 		return
 	}
 

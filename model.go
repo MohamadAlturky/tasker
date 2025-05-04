@@ -43,15 +43,19 @@ func (m *Board) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		task := msg.CreateTask()
 		err := database.CreateTask(task)
 		if err != nil {
-			// Handle error appropriately
-			return m, nil
+			// Log the error and show it to the user
+			return m, func() tea.Msg {
+				return tea.Printf("Error creating task: %v", err)
+			}
 		}
 		return m, m.cols[m.focused].Set(msg.index, task)
 	case moveMsg:
 		err := database.UpdateTask(msg.Task)
 		if err != nil {
-			// Handle error appropriately
-			return m, nil
+			// Log the error and show it to the user
+			return m, func() tea.Msg {
+				return tea.Printf("Error updating task: %v", err)
+			}
 		}
 		return m, m.cols[m.focused.getNext()].Set(APPEND, msg.Task)
 	case tea.KeyMsg:

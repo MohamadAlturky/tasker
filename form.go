@@ -18,6 +18,7 @@ type Form struct {
 	dueDate     textinput.Model
 	col         column
 	index       int
+	taskID      int
 }
 
 func newDefaultForm() *Form {
@@ -30,6 +31,7 @@ func NewForm(title, description string, dueDate time.Time) *Form {
 		title:       textinput.New(),
 		description: textarea.New(),
 		dueDate:     textinput.New(),
+		taskID:      -1,
 	}
 	form.title.Placeholder = title
 	form.description.Placeholder = description
@@ -41,12 +43,16 @@ func NewForm(title, description string, dueDate time.Time) *Form {
 
 func (f Form) CreateTask() Task {
 	dueDate, _ := time.Parse("2006-01-02", f.dueDate.Value())
-	return Task{
+	task := Task{
 		status:      f.col.status,
 		title:       f.title.Value(),
 		description: f.description.Value(),
 		dueDate:     dueDate,
 	}
+	if f.taskID != -1 {
+		task.SetID(f.taskID)
+	}
+	return task
 }
 
 func (f Form) Init() tea.Cmd {

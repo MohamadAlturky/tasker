@@ -59,6 +59,7 @@ func (c column) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				f := NewForm(task.title, task.description, task.dueDate)
 				f.index = c.list.Index()
 				f.col = c
+				f.taskID = task.GetID()
 				return f.Update(nil)
 			}
 		case key.Matches(msg, keys.New):
@@ -81,9 +82,24 @@ func (c column) View() string {
 }
 
 func (c *column) DeleteCurrent() tea.Cmd {
-	if len(c.list.VisibleItems()) > 0 {
-		c.list.RemoveItem(c.list.Index())
+	if len(c.list.VisibleItems()) == 0 {
+		return nil
 	}
+
+	// Get the current task
+	task := c.list.SelectedItem().(Task)
+
+	// Delete from database
+	err := database.DeleteTask(task.GetID())
+	if err != nil {
+		// Return an error message
+		return func() tea.Msg {
+			return tea.Printf("Error deleting task: %v", err)
+		}
+	}
+
+	// Remove from the list
+	c.list.RemoveItem(c.list.Index())
 
 	var cmd tea.Cmd
 	c.list, cmd = c.list.Update(nil)
@@ -92,7 +108,21 @@ func (c *column) DeleteCurrent() tea.Cmd {
 
 func (c *column) Set(i int, t Task) tea.Cmd {
 	if i != APPEND {
+		// Update existing task in database
+		err := database.UpdateTask(t)
+		if err != nil {
+			return func() tea.Msg {
+				return tea.Printf("Error updating task: %v", err)
+			}
+		}
 		return c.list.SetItem(i, t)
+	}
+	// Create new task in database
+	err := database.CreateTask(t)
+	if err != nil {
+		return func() tea.Msg {
+			return tea.Printf("Error creating task: %v", err)
+		}
 	}
 	return c.list.InsertItem(APPEND, t)
 }
