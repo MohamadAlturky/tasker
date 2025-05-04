@@ -41,13 +41,13 @@ func (m *Board) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, tea.Batch(cmds...)
 	case Form:
 		task := msg.CreateTask()
-		err := database.CreateTask(task)
-		if err != nil {
-			// Log the error and show it to the user
-			return m, func() tea.Msg {
-				return tea.Printf("Error creating task: %v", err)
-			}
-		}
+		// err := database.CreateTask(task)
+		// if err != nil {
+		// 	// Log the error and show it to the user
+		// 	return m, func() tea.Msg {
+		// 		return tea.Printf("Error creating task: %v", err)
+		// 	}
+		// }
 		return m, m.cols[m.focused].Set(msg.index, task)
 	case moveMsg:
 		err := database.UpdateTask(msg.Task)
