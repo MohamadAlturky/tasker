@@ -52,9 +52,18 @@ func main() {
 	}
 	defer database.Close()
 
+	// Show splash screen
+	splash := initialSplashModel()
+	p := tea.NewProgram(splash)
+	if _, err := p.Run(); err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
+
+	// Start main application
 	board = NewBoard()
 	board.initLists()
-	p := tea.NewProgram(board)
+	p = tea.NewProgram(board)
 	if _, err := p.Run(); err != nil {
 		fmt.Println(err)
 		os.Exit(1)
