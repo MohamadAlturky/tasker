@@ -19,6 +19,7 @@ type Form struct {
 	col         column
 	index       int
 	taskID      int
+	confirming  bool
 }
 
 func newDefaultForm() *Form {
@@ -35,6 +36,7 @@ func NewForm(title, description string, dueDate time.Time) *Form {
 	}
 	form.title.Placeholder = title
 	form.description.Placeholder = description
+	form.description.SetValue(description)
 	form.dueDate.Placeholder = "YYYY-MM-DD"
 	form.dueDate.SetValue(dueDate.Format("2006-01-02"))
 	form.title.Focus()
@@ -66,10 +68,25 @@ func (f Form) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		f.col = msg
 		f.col.list.Index()
 	case tea.KeyMsg:
+		if f.confirming {
+			switch msg.String() {
+			case "y", "Y", "enter":
+				return board.Update(f)
+			case "n", "N", "esc":
+				f.confirming = false
+				return f, nil
+			default:
+				return f, nil
+			}
+		}
+
 		switch {
 		case key.Matches(msg, keys.Quit):
 			return f, tea.Quit
 		case key.Matches(msg, keys.Back):
+			if f.description.Focused() {
+				return board.Update(f)
+			}
 			return board.Update(nil)
 		case key.Matches(msg, keys.Enter):
 			if f.title.Focused() {
@@ -82,7 +99,10 @@ func (f Form) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				f.description.Focus()
 				return f, textarea.Blink
 			}
-			// Return the completed form as a message.
+			if f.description.Focused() {
+				f.confirming = true
+				return f, nil
+			}
 			return board.Update(f)
 		}
 	}
@@ -115,6 +135,11 @@ func (f Form) View() string {
 		MarginTop(1).
 		MarginBottom(1)
 
+	descriptionLabel := "Description"
+	if f.description.Focused() && !f.confirming {
+		descriptionLabel = "Description (press ESC to save or Enter for confirmation)"
+	}
+
 	content := lipgloss.JoinVertical(
 		lipgloss.Left,
 		titleStyle.Render("Create a new task"),
@@ -122,10 +147,46 @@ func (f Form) View() string {
 		f.title.View(),
 		labelStyle.Render("Due Date (YYYY-MM-DD)"),
 		f.dueDate.View(),
-		labelStyle.Render("Description"),
+		labelStyle.Render(descriptionLabel),
 		f.description.View(),
 		f.help.View(keys),
 	)
 
-	return formStyle.Render(content)
+	renderedContent := formStyle.Render(content)
+
+	// If we're in confirmation mode, create a popup
+	if f.confirming {
+		// Define styles for the popup
+		popupStyle := lipgloss.NewStyle().
+			Border(lipgloss.RoundedBorder()).
+			BorderForeground(lipgloss.Color("62")).
+			Padding(1, 3).
+			Foreground(lipgloss.Color("15")).
+			Width(30).
+			Align(lipgloss.Center)
+
+		// Create the popup content
+		popupContent := lipgloss.JoinVertical(
+			lipgloss.Center,
+			"Save changes?",
+			"",
+			lipgloss.NewStyle().Foreground(lipgloss.Color("240")).Render("(y/n or enter/esc)"),
+		)
+
+		// Render the popup
+		popup := popupStyle.Render(popupContent)
+
+		// Center the popup
+		centered := lipgloss.Place(
+			formStyle.GetWidth(),
+			20,
+			lipgloss.Center,
+			lipgloss.Center,
+			popup,
+		)
+
+		return centered
+	}
+
+	return renderedContent
 }
