@@ -26,6 +26,10 @@ func (b *Board) initLists() {
 
 	// Add tasks to appropriate columns
 	for _, task := range tasks {
+		// Skip archived tasks or convert them to done status
+		if task.status > done {
+			task.status = done
+		}
 		b.cols[task.status].list.SetItems(append(b.cols[task.status].list.Items(), task))
 	}
 }

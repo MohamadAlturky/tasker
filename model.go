@@ -73,8 +73,22 @@ func (m *Board) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.KeyMsg:
 		switch {
 		case key.Matches(msg, keys.Quit):
-			m.quitting = true
-			return m, tea.Quit
+			// Check if it's ctrl+c or q
+			if msg.String() == "ctrl+c" {
+				// Always allow ctrl+c to quit
+				m.quitting = true
+				return m, tea.Quit
+			} else if msg.String() == "q" {
+				// Only allow 'q' to quit when we're not filtering
+				for _, col := range m.cols {
+					if col.list.SettingFilter() {
+						// Don't quit if any column is in filtering mode
+						return m, nil
+					}
+				}
+				m.quitting = true
+				return m, tea.Quit
+			}
 		case key.Matches(msg, keys.Left):
 			m.cols[m.focused].Blur()
 			m.focused = m.focused.getPrev()
@@ -83,6 +97,20 @@ func (m *Board) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.cols[m.focused].Blur()
 			m.focused = m.focused.getNext()
 			m.cols[m.focused].Focus()
+		case key.Matches(msg, keys.Enter):
+			// First let the column handle Enter key (move task)
+			res, cmd := m.cols[m.focused].Update(msg)
+			if _, ok := res.(column); ok {
+				m.cols[m.focused] = res.(column)
+			} else {
+				return res, cmd
+			}
+
+			// Then move focus to next column
+			m.cols[m.focused].Blur()
+			m.focused = m.focused.getNext()
+			m.cols[m.focused].Focus()
+			return m, cmd
 		}
 	}
 	res, cmd := m.cols[m.focused].Update(msg)
@@ -101,11 +129,32 @@ func (m *Board) View() string {
 	if !m.loaded {
 		return "loading..."
 	}
-	board := lipgloss.JoinHorizontal(
-		lipgloss.Left,
+
+	// Check if any column is in confirming state
+	confirmingIndex := -1
+	for i, col := range m.cols {
+		if col.confirming {
+			confirmingIndex = i
+			break
+		}
+	}
+
+	if confirmingIndex >= 0 {
+		// Only show the column with confirmation dialog
+		return m.cols[confirmingIndex].View()
+	}
+
+	// Normal view - show all columns and help
+	columnViews := []string{
 		m.cols[todo].View(),
 		m.cols[inProgress].View(),
 		m.cols[done].View(),
+	}
+
+	board := lipgloss.JoinHorizontal(
+		lipgloss.Left,
+		columnViews...,
 	)
+
 	return lipgloss.JoinVertical(lipgloss.Left, board, m.help.View(keys))
 }

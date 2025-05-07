@@ -12,9 +12,9 @@ func (k keyMap) ShortHelp() []key.Binding {
 // key.Map interface.
 func (k keyMap) FullHelp() [][]key.Binding {
 	return [][]key.Binding{
-		{k.New, k.Edit, k.Delete, k.Filter},      // first column
-		{k.Up, k.Down, k.Left, k.Right, k.Enter}, // second column
-		{k.Help, k.Quit, k.Back},                 // third column
+		{k.New, k.Edit, k.Delete, k.View, k.Filter}, // first column
+		{k.Up, k.Down, k.Left, k.Right, k.Enter},    // second column
+		{k.Help, k.Quit, k.Back},                    // third column
 	}
 }
 
@@ -22,6 +22,7 @@ type keyMap struct {
 	New    key.Binding
 	Edit   key.Binding
 	Delete key.Binding
+	View   key.Binding
 	Up     key.Binding
 	Down   key.Binding
 	Right  key.Binding
@@ -46,6 +47,10 @@ var keys = keyMap{
 		key.WithKeys("d"),
 		key.WithHelp("d", "delete"),
 	),
+	View: key.NewBinding(
+		key.WithKeys("v"),
+		key.WithHelp("v", "view details"),
+	),
 	Up: key.NewBinding(
 		key.WithKeys("up", "k"),
 		key.WithHelp("↑/k", "move up"),
@@ -64,7 +69,7 @@ var keys = keyMap{
 	),
 	Enter: key.NewBinding(
 		key.WithKeys("enter"),
-		key.WithHelp("enter", "move status forward"),
+		key.WithHelp("enter", "move task and focus to next column"),
 	),
 	// Help: key.NewBinding(
 	// 	key.WithKeys("?"),

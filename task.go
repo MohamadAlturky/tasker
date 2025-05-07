@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"time"
 )
 
 type Task struct {
@@ -10,15 +9,13 @@ type Task struct {
 	status      status
 	title       string
 	description string
-	dueDate     time.Time
 }
 
-func NewTask(status status, title, description string, dueDate time.Time) Task {
+func NewTask(status status, title, description string) Task {
 	return Task{
 		status:      status,
 		title:       title,
 		description: description,
-		dueDate:     dueDate,
 	}
 }
 

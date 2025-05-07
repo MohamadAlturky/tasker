@@ -34,7 +34,6 @@ func NewDatabase() (*Database, error) {
 			id INTEGER PRIMARY KEY AUTOINCREMENT,
 			title TEXT NOT NULL,
 			description TEXT,
-			due_date DATETIME,
 			status INTEGER NOT NULL
 		)
 	`)
@@ -56,9 +55,9 @@ func (d *Database) CreateTask(task Task) error {
 	}
 
 	result, err := d.db.Exec(`
-		INSERT INTO tasks (title, description, due_date, status)
-		VALUES (?, ?, ?, ?)
-	`, task.title, task.description, task.dueDate, task.status)
+		INSERT INTO tasks (title, description, status)
+		VALUES (?, ?, ?)
+	`, task.title, task.description, task.status)
 	if err != nil {
 		return fmt.Errorf("failed to create task: %v", err)
 	}
@@ -93,10 +92,9 @@ func (d *Database) UpdateTask(task Task) error {
 		UPDATE tasks
 		SET title = ?,
 			description = ?,
-			due_date = ?,
 			status = ?
 		WHERE id = ?
-	`, task.title, task.description, task.dueDate, task.status, task.GetID())
+	`, task.title, task.description, task.status, task.GetID())
 	if err != nil {
 		return fmt.Errorf("failed to update task: %v", err)
 	}
@@ -135,9 +133,9 @@ func (d *Database) DeleteTask(id int) error {
 
 func (d *Database) GetAllTasks() ([]Task, error) {
 	rows, err := d.db.Query(`
-		SELECT id, title, description, due_date, status
+		SELECT id, title, description, status
 		FROM tasks
-		ORDER BY status, due_date
+		ORDER BY status
 	`)
 	if err != nil {
 		return nil, fmt.Errorf("failed to query tasks: %v", err)
@@ -147,13 +145,9 @@ func (d *Database) GetAllTasks() ([]Task, error) {
 	var tasks []Task
 	for rows.Next() {
 		var task Task
-		var dueDate sql.NullTime
-		err := rows.Scan(&task.id, &task.title, &task.description, &dueDate, &task.status)
+		err := rows.Scan(&task.id, &task.title, &task.description, &task.status)
 		if err != nil {
 			return nil, fmt.Errorf("failed to scan task: %v", err)
-		}
-		if dueDate.Valid {
-			task.dueDate = dueDate.Time
 		}
 		tasks = append(tasks, task)
 	}

@@ -11,11 +11,12 @@ const APPEND = -1
 const Move = -2
 
 type column struct {
-	focus  bool
-	status status
-	list   list.Model
-	height int
-	width  int
+	focus      bool
+	status     status
+	list       list.Model
+	height     int
+	width      int
+	confirming bool
 }
 
 func (c *column) Focus() {
@@ -53,15 +54,34 @@ func (c column) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		c.setSize(msg.Width, msg.Height)
 		c.list.SetSize(msg.Width/margin, msg.Height/2)
 	case tea.KeyMsg:
+		if c.confirming {
+			switch msg.String() {
+			case "y", "Y", "enter":
+				c.confirming = false
+				return c, c.performDelete()
+			case "n", "N", "esc":
+				c.confirming = false
+				return c, nil
+			default:
+				return c, nil
+			}
+		}
+
 		switch {
 		case key.Matches(msg, keys.Edit):
 			if len(c.list.VisibleItems()) != 0 {
 				task := c.list.SelectedItem().(Task)
-				f := NewForm(task.title, task.description, task.dueDate)
+				f := NewForm(task.title, task.description, true)
 				f.index = c.list.Index()
 				f.col = c
 				f.taskID = task.GetID()
 				return f.Update(nil)
+			}
+		case key.Matches(msg, keys.View):
+			if len(c.list.VisibleItems()) != 0 {
+				task := c.list.SelectedItem().(Task)
+				td := NewTaskDetail(task)
+				return td, nil
 			}
 		case key.Matches(msg, keys.New):
 			f := newDefaultForm()
@@ -69,7 +89,11 @@ func (c column) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			f.col = c
 			return f.Update(nil)
 		case key.Matches(msg, keys.Delete):
-			return c, c.DeleteCurrent()
+			if len(c.list.VisibleItems()) != 0 {
+				c.confirming = true
+				return c, nil
+			}
+			return c, nil
 		case key.Matches(msg, keys.Enter):
 			return c, c.MoveToNext()
 		}
@@ -79,10 +103,41 @@ func (c column) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (c column) View() string {
+	if c.confirming {
+		// Define styles for the popup
+		popupStyle := lipgloss.NewStyle().
+			Border(lipgloss.RoundedBorder()).
+			BorderForeground(lipgloss.Color("62")).
+			Padding(1, 3).
+			Foreground(lipgloss.Color("15")).
+			Width(30).
+			Align(lipgloss.Center)
+
+		// Create the popup content
+		popupContent := lipgloss.JoinVertical(
+			lipgloss.Center,
+			"Delete task?",
+			"",
+			lipgloss.NewStyle().Foreground(lipgloss.Color("240")).Render("(y/n or enter/esc)"),
+		)
+
+		// Render the popup
+		popup := popupStyle.Render(popupContent)
+
+		// Center the popup - use larger dimensions when it's the only visible element
+		return lipgloss.Place(
+			c.width*3, // Use the full width of all three columns
+			20,
+			lipgloss.Center,
+			lipgloss.Center,
+			popup,
+		)
+	}
+
 	return c.getStyle().Render(c.list.View())
 }
 
-func (c *column) DeleteCurrent() tea.Cmd {
+func (c *column) performDelete() tea.Cmd {
 	if len(c.list.VisibleItems()) == 0 {
 		return nil
 	}
@@ -105,6 +160,11 @@ func (c *column) DeleteCurrent() tea.Cmd {
 	var cmd tea.Cmd
 	c.list, cmd = c.list.Update(nil)
 	return cmd
+}
+
+func (c *column) DeleteCurrent() tea.Cmd {
+	c.confirming = true
+	return nil
 }
 
 func (c *column) Set(i int, t Task) tea.Cmd {

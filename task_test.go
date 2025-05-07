@@ -2,12 +2,10 @@ package main
 
 import (
 	"testing"
-	"time"
 )
 
 func TestNewTask(t *testing.T) {
-	now := time.Now()
-	task := NewTask(todo, "Test Task", "Test Description", now)
+	task := NewTask(todo, "Test Task", "Test Description")
 
 	if task.status != todo {
 		t.Errorf("Expected status %v, got %v", todo, task.status)
@@ -17,9 +15,6 @@ func TestNewTask(t *testing.T) {
 	}
 	if task.description != "Test Description" {
 		t.Errorf("Expected description 'Test Description', got '%s'", task.description)
-	}
-	if !task.dueDate.Equal(now) {
-		t.Errorf("Expected due date %v, got %v", now, task.dueDate)
 	}
 }
 

@@ -4,7 +4,6 @@ import (
 	"database/sql"
 	"os"
 	"testing"
-	"time"
 
 	_ "modernc.org/sqlite"
 )
@@ -23,7 +22,6 @@ func setupTestDB(t *testing.T) *Database {
 			id INTEGER PRIMARY KEY AUTOINCREMENT,
 			title TEXT NOT NULL,
 			description TEXT,
-			due_date DATETIME,
 			status INTEGER NOT NULL
 		)
 	`)
@@ -47,8 +45,7 @@ func TestCreateTask(t *testing.T) {
 	db := setupTestDB(t)
 	defer cleanupTestDB(t, db)
 
-	now := time.Now()
-	task := NewTask(todo, "Test Task", "Test Description", now)
+	task := NewTask(todo, "Test Task", "Test Description")
 
 	err := db.CreateTask(task)
 	if err != nil {
@@ -73,8 +70,7 @@ func TestUpdateTask(t *testing.T) {
 	defer cleanupTestDB(t, db)
 
 	// Create initial task
-	now := time.Now()
-	task := NewTask(todo, "Test Task", "Test Description", now)
+	task := NewTask(todo, "Test Task", "Test Description")
 	err := db.CreateTask(task)
 	if err != nil {
 		t.Fatalf("Failed to create task: %v", err)
@@ -109,11 +105,10 @@ func TestGetAllTasks(t *testing.T) {
 	defer cleanupTestDB(t, db)
 
 	// Create test tasks
-	now := time.Now()
 	tasks := []Task{
-		NewTask(todo, "Task 1", "Description 1", now),
-		NewTask(inProgress, "Task 2", "Description 2", now),
-		NewTask(done, "Task 3", "Description 3", now),
+		NewTask(todo, "Task 1", "Description 1"),
+		NewTask(inProgress, "Task 2", "Description 2"),
+		NewTask(done, "Task 3", "Description 3"),
 	}
 
 	for _, task := range tasks {
